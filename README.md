@@ -7,8 +7,8 @@ Gbs-control-atmega replaces the original control software and better optimizes t
 
 It is a arduino-only fork of "gbs-control" from rama, secifically made for modern widescreen displays, including overscan, external Buttons etc.
 
-Previous work:
-https://github.com/ramapcsx2/gbs-control
+Previous work:  
+https://github.com/ramapcsx2/gbs-control  
 https://github.com/dooklink/gbs-control  
 https://github.com/mybook4/DigisparkSketches/tree/master/GBS_Control  
 https://ianstedman.wordpress.com/  
