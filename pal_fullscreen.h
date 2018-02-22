@@ -1,4 +1,4 @@
-const uint8_t pal_240p[] PROGMEM = {
+const uint8_t pal_fullscreen[] PROGMEM = {
 44,
 133,
 0,
@@ -77,7 +77,7 @@ const uint8_t pal_240p[] PROGMEM = {
 0,
 64,
 2,
-113,
+110,
 2,
 0,
 0,
@@ -256,12 +256,12 @@ const uint8_t pal_240p[] PROGMEM = {
 0,
 0,
 2,
-119,
+109,
 136,
 62,
-225,
-37,
-118,
+211,
+69,
+117,
 188,
 67,
 62,
@@ -277,8 +277,8 @@ const uint8_t pal_240p[] PROGMEM = {
 192,
 139,
 62,
-170,
-97,
+166,
+81,
 33,
 1,
 0,
@@ -592,3 +592,4 @@ const uint8_t pal_240p[] PROGMEM = {
 0,
 0,
 };
+

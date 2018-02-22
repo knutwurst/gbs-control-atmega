@@ -1,4 +1,4 @@
-const uint8_t pal_240p[] PROGMEM = {
+const uint8_t pal_widescreen[] PROGMEM = {
 44,
 133,
 0,

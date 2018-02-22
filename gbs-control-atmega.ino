@@ -2,11 +2,17 @@
 #include "minimal_startup.h"
 #include "ofw_ypbpr.h"
 #include "rgbhv.h"
-#include "ntsc_240p.h"
+//#include "ntsc_240p.h"
 //#include "pal_240p.h"
-#include "pal_240p_widescreen.h"
-#include "ntsc_feedbackclock.h"
+
+#include "pal_widescreen.h"
+#include "pal_fullscreen.h"
 #include "pal_feedbackclock.h"
+
+#include "ntsc_widescreen.h"
+#include "ntsc_fullscreen.h"
+#include "ntsc_feedbackclock.h"
+
 
 #define LEDON  digitalWrite(LED_BUILTIN, HIGH)
 #define LEDOFF digitalWrite(LED_BUILTIN, LOW)
@@ -14,6 +20,7 @@
 #define BUTTON1 2
 #define BUTTON2 3
 #define BUTTON3 4
+#define SWITCH1 8
 
 #define GBS_ADDR 0x17
 
@@ -42,6 +49,8 @@ struct userOptions {
 } uopts;
 struct userOptions *uopt = &uopts;
 
+bool sizePositionToggle = false;
+bool widescreenSwitchEnabled = false;
 char globalCommand;
 
 void nopdelay(unsigned int times) {
@@ -1505,22 +1514,34 @@ void doPostPresetLoadSteps() {
 
 void applyPresets(byte result) {
   if (result == 2) {
-    Serial.println(F("PAL timing "));
     if (uopt->presetPreference == 0) {
-      writeProgramArrayNew(pal_240p);
+      if(widescreenSwitchEnabled == true) {
+        Serial.println(F("writing PAL widescreen preset"));
+        writeProgramArrayNew(pal_widescreen);
+      } else {
+        Serial.println(F("writing PAL fullscreen preset"));
+        writeProgramArrayNew(pal_fullscreen);
+      }
     }
     else if (uopt->presetPreference == 1) {
+      Serial.println(F("writing PAL feedbackclock"));
       writeProgramArrayNew(pal_feedbackclock);
     }
     rto->videoStandardInput = 2;
     doPostPresetLoadSteps();
   }
   else if (result == 1) {
-    Serial.println(F("NTSC timing "));
     if (uopt->presetPreference == 0) {
-      writeProgramArrayNew(ntsc_240p);
+      if(widescreenSwitchEnabled == true) {
+          Serial.println(F("writing NTSC widescreen preset"));
+          writeProgramArrayNew(ntsc_widescreen);
+        } else {
+          Serial.println(F("writing NTSC fullscreen preset"));
+          writeProgramArrayNew(ntsc_fullscreen);
+        }
     }
     else if (uopt->presetPreference == 1) {
+      Serial.println(F("writing NTSC feedbackclock"));
       writeProgramArrayNew(ntsc_feedbackclock);
     }
     rto->videoStandardInput = 1;
@@ -1530,12 +1551,18 @@ void applyPresets(byte result) {
     Serial.println(F("HDTV timing "));
     // ntsc base
     if (uopt->presetPreference == 0) {
-      writeProgramArrayNew(ntsc_240p);
+      if(widescreenSwitchEnabled == true) {
+          Serial.println(F("writing NTSC widescreen preset"));
+          writeProgramArrayNew(ntsc_widescreen);
+        } else {
+          Serial.println(F("writing NTSC fullscreen preset"));
+          writeProgramArrayNew(ntsc_fullscreen);
+        }
     }
     else if (uopt->presetPreference == 1) {
+      Serial.println(F("writing NTSC feedbackclock"));
       writeProgramArrayNew(ntsc_feedbackclock);
     }
-    // todo: and now? isn't there something missing?
     rto->videoStandardInput = 3;
     doPostPresetLoadSteps();
   }
@@ -1778,9 +1805,11 @@ void setup() {
   pinMode(BUTTON1, INPUT);
   pinMode(BUTTON2, INPUT);
   pinMode(BUTTON3, INPUT);
+  pinMode(SWITCH1, INPUT);
   digitalWrite(BUTTON1, HIGH);
   digitalWrite(BUTTON2, HIGH);
   digitalWrite(BUTTON3, HIGH);
+  digitalWrite(SWITCH1, HIGH);
 
   // user options // todo: save/load from EEPROM
   uopt->presetPreference = 0;
@@ -1869,7 +1898,7 @@ void setup() {
   LEDOFF; // startup done, disable the LED
 }
 
-bool sizePositionToggle = false;
+bool widescreenSwitchEnabledOldValue = false;
 
 void loop() {
   static uint8_t readout = 0;
@@ -1883,15 +1912,23 @@ void loop() {
   static uint16_t signalInputChangeCounter = 0;
   static unsigned long lastTimeSyncWatcher = millis();
   static unsigned long lastTimeMDWatchdog = millis();
+  
 
   bool button1pressed = (digitalRead(BUTTON1) == LOW);
   bool button2pressed = (digitalRead(BUTTON2) == LOW);
   bool button3pressed = (digitalRead(BUTTON3) == LOW);
+  
+  widescreenSwitchEnabled = (digitalRead(SWITCH1) == HIGH);
 
-  if (button1pressed && button2pressed && button3pressed) { // reset everything to PAL preset
-     writeProgramArrayNew(pal_240p);
-     doPostPresetLoadSteps();
-     delay(500);
+  if((widescreenSwitchEnabled != widescreenSwitchEnabledOldValue) || button1pressed && button2pressed && button3pressed) {
+    if(widescreenSwitchEnabled == true) {
+        writeProgramArrayNew(pal_widescreen);
+      } else {
+        writeProgramArrayNew(pal_fullscreen);
+      }
+      widescreenSwitchEnabledOldValue = widescreenSwitchEnabled;
+      doPostPresetLoadSteps();
+      delay(500);
   }
 
   if (button1pressed) {  // toggle between scaling up/down and moving up/down
@@ -1994,13 +2031,23 @@ void loop() {
         }
         break;
       case 'e':
-        Serial.println(F("ntsc preset"));
-        writeProgramArrayNew(ntsc_240p);
+        if(widescreenSwitchEnabled == true) {
+          Serial.println(F("ntsc preset widescreen"));
+          writeProgramArrayNew(ntsc_widescreen);
+        } else {
+          Serial.println(F("ntsc preset fullscreen"));
+          writeProgramArrayNew(ntsc_fullscreen);
+        }
         doPostPresetLoadSteps();
         break;
       case 'r':
-        Serial.println(F("pal preset"));
-        writeProgramArrayNew(pal_240p);
+        if(widescreenSwitchEnabled == true) {
+          Serial.println(F("pal preset widescreen"));
+          writeProgramArrayNew(pal_widescreen);
+        } else {
+          Serial.println(F("pal preset fullscreen"));
+          writeProgramArrayNew(pal_fullscreen);
+        }
         doPostPresetLoadSteps();
         break;
       case '.':
