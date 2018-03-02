@@ -1,7 +1,10 @@
 #include <Wire.h>
 #include "minimal_startup.h"
-#include "ofw_ypbpr.h"
 #include "rgbhv.h"
+
+#include "ypbpr_1080i.h"
+#include "ofw_ypbpr.h"
+
 //#include "ntsc_240p.h"
 //#include "pal_240p.h"
 
@@ -13,7 +16,6 @@
 #include "ntsc_fullscreen.h"
 #include "ntsc_feedbackclock.h"
 
-
 #define LEDON  digitalWrite(LED_BUILTIN, HIGH)
 #define LEDOFF digitalWrite(LED_BUILTIN, LOW)
 #define vsyncInPin 10
@@ -24,6 +26,9 @@
 
 #define GBS_ADDR 0x17
 
+
+//#define REGISTER_DUMP
+
 // runTimeOptions holds system variables
 struct runTimeOptions {
   boolean inputIsYpBpR;
@@ -31,6 +36,7 @@ struct runTimeOptions {
   uint8_t videoStandardInput : 3; // 0 - unknown, 1 - NTSC like, 2 - PAL like, 3 480p NTSC, 4 576p PAL
   uint8_t phaseSP;
   uint8_t phaseADC;
+  uint8_t samplingStart;
   uint8_t currentLevelSOG;
   boolean deinterlacerWasTurnedOff;
   boolean modeDetectInReset;
@@ -49,7 +55,7 @@ struct userOptions {
 } uopts;
 struct userOptions *uopt = &uopts;
 
-bool sizePositionToggle = false;
+uint8_t imageFunctionToggle = 0;
 bool widescreenSwitchEnabled = false;
 char globalCommand;
 
@@ -205,6 +211,22 @@ void writeProgramArrayNew(const uint8_t* programArray)
   writeOneByte(0x81, 0x2e); // MD H nonsensical custom mode
   writeOneByte(0x82, 0x35); // MD H / V timer detect enable, auto detect enable
   writeOneByte(0x83, 0x10); // MD H / V unstable estimation lock value medium
+
+  //update rto phase variables
+  uint8_t readout = 0;
+  writeOneByte(0xF0, 5);
+  readFromRegister(0x18, 1, &readout);
+  rto->phaseADC = ((readout & 0x3e) >> 1);
+  readFromRegister(0x19, 1, &readout);
+  rto->phaseSP = ((readout & 0x3e) >> 1);
+  Serial.println(rto->phaseADC); Serial.println(rto->phaseSP);
+
+  //reset rto sampling start variable
+  writeOneByte(0xF0, 1);
+  readFromRegister(0x26, 1, &readout);
+  rto->samplingStart = readout;
+  Serial.println(rto->samplingStart);
+  
   writeOneByte(0xF0, 0);
   writeOneByte(0x46, 0x3f); // reset controls 1 // everything on except VDS display output
   writeOneByte(0x47, 0x17); // all on except HD bypass
@@ -1486,10 +1508,10 @@ void doPostPresetLoadSteps() {
   setSOGLevel( rto->currentLevelSOG );
   resetDigital();
   delay(50);
-  byte result = getVideoMode();
+  byte videoMode = getVideoMode();
   byte timeout = 255;
-  while (result == 0 && --timeout > 0) {
-    result = getVideoMode();
+  while (videoMode == 0 && --timeout > 0) {
+    videoMode = getVideoMode();
     delay(2);
   }
   if (timeout == 0) {
@@ -1512,8 +1534,8 @@ void doPostPresetLoadSteps() {
   Serial.println(F("----"));
 }
 
-void applyPresets(byte result) {
-  if (result == 2) {
+void applyPresets(byte videoMode) {
+  if (videoMode == 2) {
     if (uopt->presetPreference == 0) {
       if(widescreenSwitchEnabled == true) {
         Serial.println(F("writing PAL widescreen preset"));
@@ -1530,7 +1552,7 @@ void applyPresets(byte result) {
     rto->videoStandardInput = 2;
     doPostPresetLoadSteps();
   }
-  else if (result == 1) {
+  else if (videoMode == 1) {
     if (uopt->presetPreference == 0) {
       if(widescreenSwitchEnabled == true) {
           Serial.println(F("writing NTSC widescreen preset"));
@@ -1547,16 +1569,16 @@ void applyPresets(byte result) {
     rto->videoStandardInput = 1;
     doPostPresetLoadSteps();
   }
-  else if (result == 3) {
+  else if (videoMode == 3) {
     Serial.println(F("HDTV timing "));
     // ntsc base
     if (uopt->presetPreference == 0) {
       if(widescreenSwitchEnabled == true) {
           Serial.println(F("writing NTSC widescreen preset"));
-          writeProgramArrayNew(ntsc_widescreen);
+          writeProgramArrayNew(ypbpr_1080i);
         } else {
           Serial.println(F("writing NTSC fullscreen preset"));
-          writeProgramArrayNew(ntsc_fullscreen);
+          writeProgramArrayNew(ypbpr_1080i);
         }
     }
     else if (uopt->presetPreference == 1) {
@@ -1655,6 +1677,11 @@ void setParametersIF() {
   writeOneByte(0x1f, (uint8_t)(register_combined >> 8));
 
   // IF vertical blanking start position should be in the loaded preset
+}
+
+void setSamplingStart(uint8_t samplingStart) {
+  writeOneByte(0xF0, 1);
+  writeOneByte(0x26, samplingStart);
 }
 
 void advancePhase() {
@@ -1818,6 +1845,7 @@ void setup() {
   rto->syncWatcher = true;  // continously checks the current sync status. issues resets if necessary
   rto->phaseADC = 16; // 0 to 31
   rto->phaseSP = 10; // 0 to 31
+  rto->samplingStart = 3; // holds S1_26
 
   // the following is just run time variables. don't change!
   rto->currentLevelSOG = 10;
@@ -1848,7 +1876,8 @@ void setup() {
   Wire.setClock(400000); // TV5725 supports 400kHz
   delay(2);
 
-#if 1 // #if 0 to go directly to loop()
+
+#ifdef REGISTER_DUMP
   uint8_t temp = 0;
   writeOneByte(0xF0, 1);
   readFromRegister(0xF0, 1, &temp);
@@ -1859,6 +1888,15 @@ void setup() {
     delay(500);
   }
 
+  Serial.println("Dumping registers... \n\n");
+  Serial.println("const uint8_t dump[] PROGMEM = {");
+  for (int segment = 0; segment <= 5; segment++) {
+          dumpRegisters(segment);
+      }
+  Serial.println("};");
+#endif
+
+#ifndef REGISTER_DUMP
   disableVDS();
   writeProgramArrayNew(minimal_startup); // bring the chip up for input detection
   resetDigital();
@@ -1866,41 +1904,43 @@ void setup() {
   inputAndSyncDetect();
   delay(500);
 
-  byte result = getVideoMode();
+  byte videoMode = getVideoMode();
   byte timeout = 255;
-  while (result == 0 && --timeout > 0) {
+  while (videoMode == 0 && --timeout > 0) {
     if ((timeout % 5) == 0) Serial.print(".");
-    result = getVideoMode();
+    videoMode = getVideoMode();
     delay(1);
   }
 
-  if (timeout > 0 && result != 0) {
-    applyPresets(result);
+  if (timeout > 0 && videoMode != 0) {
+    applyPresets(videoMode);
     delay(1000); // at least 750ms required to become stable
   }
 
   // prepare for synclock
-  result = getVideoMode();
+  videoMode = getVideoMode();
   timeout = 255;
-  while (result == 0 && --timeout > 0) {
+  while (videoMode == 0 && --timeout > 0) {
     if ((timeout % 5) == 0) Serial.print(".");
-    result = getVideoMode();
+    videoMode = getVideoMode();
     delay(1);
   }
   // sync should be stable now
-  if ((result != 0) && rto->syncLockEnabled == true && rto->syncLockFound == false && rto->videoStandardInput != 0) {
+  if ((videoMode != 0) && rto->syncLockEnabled == true && rto->syncLockFound == false && rto->videoStandardInput != 0) {
     aquireSyncLock();
   }
 #endif
 
   globalCommand = 0; // web server uses this to issue commands
-  Serial.print(F("\nMCU: ")); Serial.println(F_CPU);
+  Serial.print(F("\nStartup complete! \nMCU: ")); Serial.println(F_CPU);
   LEDOFF; // startup done, disable the LED
 }
 
 bool widescreenSwitchEnabledOldValue = false;
 
 void loop() {
+
+#ifndef REGISTER_DUMP
   static uint8_t readout = 0;
   static uint8_t segment = 0;
   static uint8_t inputRegister = 0;
@@ -1928,39 +1968,66 @@ void loop() {
       }
       widescreenSwitchEnabledOldValue = widescreenSwitchEnabled;
       doPostPresetLoadSteps();
+      button1pressed = false;
+      button2pressed = false;
+      button3pressed = false;
       delay(500);
   }
 
-  if (button1pressed) {  // toggle between scaling up/down and moving up/down
-  if (sizePositionToggle == false) {
-      sizePositionToggle = true;
-    } else {
-      sizePositionToggle = false;
-    }
-    delay(500);
+  if (button1pressed) {  // toggle between scaling up/down and moving up/down  
+      imageFunctionToggle++;
+      Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle); 
+      delay(500);
   }
 
-  if (sizePositionToggle == true) {
-      if (button2pressed) {
-        shiftVerticalDown();
-        delay(100);
-      }
-  
-      if (button3pressed) {
-        shiftVerticalUp();
-        delay(100);
-    }
-   } else {
-      if (button2pressed) {
-        scaleVertical(1, true);
-        delay(100);
-      }
-  
-      if (button3pressed) {
-        scaleVertical(1, false);
-        delay(100);
-      }
+  if(imageFunctionToggle > 3) {
+      imageFunctionToggle = 0;
   }
+
+  if(button2pressed || button3pressed) {
+    switch(imageFunctionToggle) {
+        case 0:
+            if (button2pressed) {
+              shiftVerticalDown();
+              delay(100);
+            }
+            if (button3pressed) {
+              shiftVerticalUp();
+              delay(100);
+            }
+            break;
+        case 1:
+            if (button2pressed) {
+              scaleVertical(1, false);
+              delay(100);
+            }
+            if (button3pressed) {
+              scaleVertical(1, true);
+              delay(100);
+            }
+            break;
+        case 2:
+            if (button2pressed) {
+              shiftHorizontalLeft();
+              delay(100);
+            }
+            if (button3pressed) {
+              shiftHorizontalRight();
+              delay(100);
+            }
+            break;
+        case 3:
+            if (button2pressed) {
+              scaleHorizontalSmaller();
+              delay(100);
+            }
+            if (button3pressed) {
+              scaleHorizontalLarger();
+              delay(100);
+            }
+            break;
+        }
+    }
 
   if (Serial.available() || globalCommand != 0) {
   switch (globalCommand == 0 ? Serial.read() : globalCommand) {
@@ -2165,8 +2232,9 @@ void loop() {
         invertHS(); invertVS();
         break;
       case '9':
-        writeProgramArrayNew(ntsc_feedbackclock);
+        //writeProgramArrayNew(ntsc_feedbackclock);
         //writeProgramArrayNew(rgbhv);
+        writeProgramArrayNew(ypbpr_1080i);
         doPostPresetLoadSteps();
         break;
       case 'o':
@@ -2343,6 +2411,12 @@ void loop() {
         }
         break;
       case 'x':
+        rto->samplingStart++;
+        if (rto->samplingStart > 6) {
+          rto->samplingStart = 1;
+        }
+        setSamplingStart(rto->samplingStart);
+        Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
         break;
       default:
         Serial.println(F("command not understood"));
@@ -2355,18 +2429,18 @@ void loop() {
 
   // poll sync status continously
   if ((rto->sourceDisconnected == false) && (rto->syncWatcher == true) && ((millis() - lastTimeSyncWatcher) > 60)) {
-  byte result = getVideoMode();
+  byte videoMode = getVideoMode();
     boolean doChangeVideoMode = false;
 
-    if (result == 0) {
+    if (videoMode == 0) {
       noSyncCounter++;
       signalInputChangeCounter = 0; // needs some field testing > seems to be fine!
     }
-    else if (result != rto->videoStandardInput) { // ntsc/pal switch or similar
+    else if (videoMode != rto->videoStandardInput) { // ntsc/pal switch or similar
       noSyncCounter = 0;
       signalInputChangeCounter++;
     }
-    else if (noSyncCounter > 0) { // result is rto->videoStandardInput
+    else if (noSyncCounter > 0) { // videoMode is rto->videoStandardInput
       noSyncCounter--;
     }
 
@@ -2381,9 +2455,6 @@ void loop() {
 
     // debug
     if (noSyncCounter > 0 ) {
-      Serial.print(signalInputChangeCounter);
-      Serial.print(" ");
-      Serial.println(noSyncCounter);
       if (noSyncCounter < 3) {
         Serial.print(".");
       }
@@ -2401,22 +2472,22 @@ void loop() {
       delay(300); // and give MD some time
       //rto->videoStandardInput = 0;
       signalInputChangeCounter = 0;
-      noSyncCounter = 60; // speed up sog change attempts by not zeroing this here
+      noSyncCounter = 0; // speed up sog change attempts by not zeroing this here
     }
 
     if ( (doChangeVideoMode == true) && (rto->videoStandardInput == 0) ) {
       byte temp = 250;
-      while (result == 0 && temp-- > 0) {
+      while (videoMode == 0 && temp-- > 0) {
         delay(1);
-        result = getVideoMode();
+        videoMode = getVideoMode();
       }
       boolean isValid = getSyncProcessorSignalValid();
-      if (result > 0 && isValid) { // ensures this isn't an MD glitch
-        applyPresets(result);
+      if (videoMode > 0 && isValid) { // ensures this isn't an MD glitch
+        applyPresets(videoMode);
         delay(600);
         noSyncCounter = 0;
       }
-      else if (result > 0 && !isValid) Serial.println(F("MD Glitch!"));
+      else if (videoMode > 0 && !isValid) Serial.println(F("MD Glitch!"));
     }
 
     // ModeDetect can get stuck in the last mode when console is powered off
@@ -2527,5 +2598,6 @@ void loop() {
       rto->sourceDisconnected = false;
     }
   }
+#endif
 }
 
