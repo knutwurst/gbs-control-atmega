@@ -64,13 +64,11 @@ void nopdelay(unsigned int times) {
     __asm__("nop\n\t");
 }
 
-void writeOneByte(uint8_t slaveRegister, uint8_t value)
-{
+void writeOneByte(uint8_t slaveRegister, uint8_t value) {
   writeBytes(slaveRegister, &value, 1);
 }
 
-void writeBytes(uint8_t slaveAddress, uint8_t slaveRegister, uint8_t* values, uint8_t numValues)
-{
+void writeBytes(uint8_t slaveAddress, uint8_t slaveRegister, uint8_t* values, uint8_t numValues) {
   Wire.beginTransmission(slaveAddress);
   Wire.write(slaveRegister);
   int sentBytes = Wire.write(values, numValues);
@@ -81,21 +79,16 @@ void writeBytes(uint8_t slaveAddress, uint8_t slaveRegister, uint8_t* values, ui
   }
 }
 
-void writeBytes(uint8_t slaveRegister, uint8_t* values, int numValues)
-{
+void writeBytes(uint8_t slaveRegister, uint8_t* values, int numValues) {
   writeBytes(GBS_ADDR, slaveRegister, values, numValues);
 }
 
-void writeProgramArray(const uint8_t* programArray)
-{
-  for (int y = 0; y < 6; y++)
-  {
+void writeProgramArray(const uint8_t* programArray) {
+  for (int y = 0; y < 6; y++) {
     writeOneByte(0xF0, (uint8_t)y );
-    for (int z = 0; z < 16; z++)
-    {
+    for (int z = 0; z < 16; z++) {
       uint8_t bank[16];
-      for (int w = 0; w < 16; w++)
-      {
+      for (int w = 0; w < 16; w++) {
         bank[w] = pgm_read_byte(programArray + (y * 256 + z * 16 + w));
       }
       writeBytes(z * 16, bank, 16);
@@ -103,8 +96,7 @@ void writeProgramArray(const uint8_t* programArray)
   }
 }
 
-void writeProgramArrayNew(const uint8_t* programArray)
-{
+void writeProgramArrayNew(const uint8_t* programArray) {
   int index = 0;
   uint8_t bank[16];
 
@@ -123,8 +115,7 @@ void writeProgramArrayNew(const uint8_t* programArray)
   writeOneByte(0x17, getSingleByteFromPreset(programArray, 503)); // charge pump current
   writeOneByte(0x18, 0); writeOneByte(0x19, 0); // adc / sp phase reset
 
-  for (int y = 0; y < 6; y++)
-  {
+  for (int y = 0; y < 6; y++) {
     writeOneByte(0xF0, (uint8_t)y );
     switch (y) {
       case 0:
@@ -232,7 +223,6 @@ void writeProgramArrayNew(const uint8_t* programArray)
   writeOneByte(0x47, 0x17); // all on except HD bypass
 }
 
-// This is still sometimes useful:
 void writeProgramArraySection(const uint8_t* programArray, byte section, byte subsection = 0) {
   // section 1: index = 48
   uint8_t bank[16];
@@ -493,22 +483,18 @@ uint8_t getSingleByteFromPreset(const uint8_t* programArray, unsigned int offset
   return pgm_read_byte(programArray + offset);
 }
 
-void zeroAll()
-{
+void zeroAll() {
   // turn processing units off first
   writeOneByte(0xF0, 0);
   writeOneByte(0x46, 0x00); // reset controls 1
   writeOneByte(0x47, 0x00); // reset controls 2
 
   // zero out entire register space
-  for (int y = 0; y < 6; y++)
-  {
+  for (int y = 0; y < 6; y++) {
     writeOneByte(0xF0, (uint8_t)y );
-    for (int z = 0; z < 16; z++)
-    {
+    for (int z = 0; z < 16; z++) {
       uint8_t bank[16];
-      for (int w = 0; w < 16; w++)
-      {
+      for (int w = 0; w < 16; w++) {
         bank[w] = 0;
       }
       writeBytes(z * 16, bank, 16);
@@ -516,14 +502,12 @@ void zeroAll()
   }
 }
 
-void readFromRegister(uint8_t segment, uint8_t reg, int bytesToRead, uint8_t* output)
-{
+void readFromRegister(uint8_t segment, uint8_t reg, int bytesToRead, uint8_t* output) {
   writeOneByte(0xF0, segment);
   readFromRegister(reg, bytesToRead, output);
 }
 
-void readFromRegister(uint8_t reg, int bytesToRead, uint8_t* output)
-{
+void readFromRegister(uint8_t reg, int bytesToRead, uint8_t* output) {
   Wire.beginTransmission(GBS_ADDR);
   if (!Wire.write(reg)) {
     Serial.println(F("i2c error"));
@@ -532,8 +516,7 @@ void readFromRegister(uint8_t reg, int bytesToRead, uint8_t* output)
   Wire.endTransmission();
   Wire.requestFrom(GBS_ADDR, bytesToRead, true);
   int rcvBytes = 0;
-  while (Wire.available())
-  {
+  while (Wire.available()) {
     output[rcvBytes++] =  Wire.read();
   }
 
@@ -543,8 +526,7 @@ void readFromRegister(uint8_t reg, int bytesToRead, uint8_t* output)
 }
 
 // dumps the current chip configuration in a format that's ready to use as new preset :)
-void dumpRegisters(byte segment)
-{
+void dumpRegisters(byte segment) {
   uint8_t readout = 0;
   if (segment > 5) return;
   writeOneByte(0xF0, segment);
@@ -597,8 +579,7 @@ void dumpRegisters(byte segment)
 // S0_40 - S0_59 "misc"
 // S1_00 - S1_2a "IF"
 // S3_00 - S3_74 "VDS"
-void dumpRegistersReduced()
-{
+void dumpRegistersReduced() {
   uint8_t readout = 0;
 
   writeOneByte(0xF0, 0);
@@ -1499,6 +1480,7 @@ void aquireSyncLock() {
 
   rto->syncLockFound = true;
 }
+
 void doPostPresetLoadSteps() {
   if (rto->inputIsYpBpR == true) {
     Serial.print("(YUV)");
@@ -1768,8 +1750,7 @@ void setPhaseADC() {
 void setClampPosition() {
   if (rto->inputIsYpBpR) {
     return;
-  }
-  else {
+  } else {
     uint8_t register_high, register_low;
     uint16_t hpw, htotal, clampPositionStart, clampPositionStop;
 
@@ -1822,7 +1803,6 @@ void applyRGBPatches() {
   rto->currentLevelSOG = 10;
   setSOGLevel( rto->currentLevelSOG );
 }
-
 
 void setup() {
   Serial.begin(250000); // up from 57600
@@ -1937,6 +1917,7 @@ void setup() {
 }
 
 bool widescreenSwitchEnabledOldValue = false;
+bool button1HoldDown = false;
 
 void loop() {
 
@@ -1957,10 +1938,12 @@ void loop() {
   bool button1pressed = (digitalRead(BUTTON1) == LOW);
   bool button2pressed = (digitalRead(BUTTON2) == LOW);
   bool button3pressed = (digitalRead(BUTTON3) == LOW);
+
+  
   
   widescreenSwitchEnabled = (digitalRead(SWITCH1) == HIGH);
 
-  if((widescreenSwitchEnabled != widescreenSwitchEnabledOldValue) || button1pressed && button2pressed && button3pressed) {
+  if((widescreenSwitchEnabled != widescreenSwitchEnabledOldValue) || (button2pressed && button3pressed)) {
     if(widescreenSwitchEnabled == true) {
         writeProgramArrayNew(pal_widescreen);
       } else {
@@ -1974,9 +1957,40 @@ void loop() {
       delay(500);
   }
 
-  if (button1pressed) {  // toggle between scaling up/down and moving up/down  
+  if(button1pressed) {
+    button1HoldDown = true; // set it to true, but do not set it back when releasing the button.
+  }
+
+  if(button1HoldDown == true && (button2pressed || button3pressed)) {
+    if(button2pressed) {
+        rto->samplingStart++;
+        if (rto->samplingStart > 6) {
+          rto->samplingStart = 1;
+        }
+        setSamplingStart(rto->samplingStart);
+        Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
+        button2pressed = false;
+    }
+
+    if(button3pressed) {
+        rto->samplingStart--;
+        if (rto->samplingStart < 1) {
+          rto->samplingStart = 6;
+        }
+        setSamplingStart(rto->samplingStart);
+        Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
+        button3pressed = false;
+    }
+    button1HoldDown = false;
+    delay(500);
+  }
+
+  
+  // is button1 released? AND was pressed before?
+  if (button1HoldDown == true && button1pressed == false) {  // toggle between scaling up/down and moving up/down  
       imageFunctionToggle++;
-      Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle); 
+      Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle);
+      button1HoldDown = false;
       delay(500);
   }
 
