@@ -217,7 +217,7 @@ void writeProgramArrayNew(const uint8_t* programArray) {
   readFromRegister(0x26, 1, &readout);
   rto->samplingStart = readout;
   Serial.println(rto->samplingStart);
-  
+
   writeOneByte(0xF0, 0);
   writeOneByte(0x46, 0x3f); // reset controls 1 // everything on except VDS display output
   writeOneByte(0x47, 0x17); // all on except HD bypass
@@ -1519,7 +1519,7 @@ void doPostPresetLoadSteps() {
 void applyPresets(byte videoMode) {
   if (videoMode == 2) {
     if (uopt->presetPreference == 0) {
-      if(widescreenSwitchEnabled == true) {
+      if (widescreenSwitchEnabled == true) {
         Serial.println(F("writing PAL widescreen preset"));
         writeProgramArrayNew(pal_widescreen);
       } else {
@@ -1536,13 +1536,13 @@ void applyPresets(byte videoMode) {
   }
   else if (videoMode == 1) {
     if (uopt->presetPreference == 0) {
-      if(widescreenSwitchEnabled == true) {
-          Serial.println(F("writing NTSC widescreen preset"));
-          writeProgramArrayNew(ntsc_widescreen);
-        } else {
-          Serial.println(F("writing NTSC fullscreen preset"));
-          writeProgramArrayNew(ntsc_fullscreen);
-        }
+      if (widescreenSwitchEnabled == true) {
+        Serial.println(F("writing NTSC widescreen preset"));
+        writeProgramArrayNew(ntsc_widescreen);
+      } else {
+        Serial.println(F("writing NTSC fullscreen preset"));
+        writeProgramArrayNew(ntsc_fullscreen);
+      }
     }
     else if (uopt->presetPreference == 1) {
       Serial.println(F("writing NTSC feedbackclock"));
@@ -1555,13 +1555,13 @@ void applyPresets(byte videoMode) {
     Serial.println(F("HDTV timing "));
     // ntsc base
     if (uopt->presetPreference == 0) {
-      if(widescreenSwitchEnabled == true) {
-          Serial.println(F("writing NTSC widescreen preset"));
-          writeProgramArrayNew(ypbpr_1080i);
-        } else {
-          Serial.println(F("writing NTSC fullscreen preset"));
-          writeProgramArrayNew(ypbpr_1080i);
-        }
+      if (widescreenSwitchEnabled == true) {
+        Serial.println(F("writing NTSC widescreen preset"));
+        writeProgramArrayNew(ypbpr_1080i);
+      } else {
+        Serial.println(F("writing NTSC fullscreen preset"));
+        writeProgramArrayNew(ypbpr_1080i);
+      }
     }
     else if (uopt->presetPreference == 1) {
       Serial.println(F("writing NTSC feedbackclock"));
@@ -1871,8 +1871,8 @@ void setup() {
   Serial.println("Dumping registers... \n\n");
   Serial.println("const uint8_t dump[] PROGMEM = {");
   for (int segment = 0; segment <= 5; segment++) {
-          dumpRegisters(segment);
-      }
+    dumpRegisters(segment);
+  }
   Serial.println("};");
 #endif
 
@@ -1933,118 +1933,118 @@ void loop() {
   static uint16_t signalInputChangeCounter = 0;
   static unsigned long lastTimeSyncWatcher = millis();
   static unsigned long lastTimeMDWatchdog = millis();
-  
+
 
   bool button1pressed = (digitalRead(BUTTON1) == LOW);
   bool button2pressed = (digitalRead(BUTTON2) == LOW);
   bool button3pressed = (digitalRead(BUTTON3) == LOW);
 
-  
-  
+
+
   widescreenSwitchEnabled = (digitalRead(SWITCH1) == HIGH);
 
-  if((widescreenSwitchEnabled != widescreenSwitchEnabledOldValue) || (button2pressed && button3pressed)) {
-    if(widescreenSwitchEnabled == true) {
-        writeProgramArrayNew(pal_widescreen);
-      } else {
-        writeProgramArrayNew(pal_fullscreen);
-      }
-      widescreenSwitchEnabledOldValue = widescreenSwitchEnabled;
-      doPostPresetLoadSteps();
-      button1pressed = false;
-      button2pressed = false;
-      button3pressed = false;
-      delay(500);
+  if ((widescreenSwitchEnabled != widescreenSwitchEnabledOldValue) || (button2pressed && button3pressed)) {
+    if (widescreenSwitchEnabled == true) {
+      writeProgramArrayNew(pal_widescreen);
+    } else {
+      writeProgramArrayNew(pal_fullscreen);
+    }
+    widescreenSwitchEnabledOldValue = widescreenSwitchEnabled;
+    doPostPresetLoadSteps();
+    button1pressed = false;
+    button2pressed = false;
+    button3pressed = false;
+    delay(500);
   }
 
-  if(button1pressed) {
+  if (button1pressed) {
     button1HoldDown = true; // set it to true, but do not set it back when releasing the button.
   }
 
-  if(button1HoldDown == true && (button2pressed || button3pressed)) {
-    if(button2pressed) {
-        rto->samplingStart++;
-        if (rto->samplingStart > 6) {
-          rto->samplingStart = 1;
-        }
-        setSamplingStart(rto->samplingStart);
-        Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
-        button2pressed = false;
+  if (button1HoldDown == true && (button2pressed || button3pressed)) {
+    if (button2pressed) {
+      rto->samplingStart++;
+      if (rto->samplingStart > 6) {
+        rto->samplingStart = 1;
+      }
+      setSamplingStart(rto->samplingStart);
+      Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
+      button2pressed = false;
     }
 
-    if(button3pressed) {
-        rto->samplingStart--;
-        if (rto->samplingStart < 1) {
-          rto->samplingStart = 6;
-        }
-        setSamplingStart(rto->samplingStart);
-        Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
-        button3pressed = false;
+    if (button3pressed) {
+      rto->samplingStart--;
+      if (rto->samplingStart < 1) {
+        rto->samplingStart = 6;
+      }
+      setSamplingStart(rto->samplingStart);
+      Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
+      button3pressed = false;
     }
     button1HoldDown = false;
     delay(500);
   }
 
-  
+
   // is button1 released? AND was pressed before?
-  if (button1HoldDown == true && button1pressed == false) {  // toggle between scaling up/down and moving up/down  
-      imageFunctionToggle++;
-      Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle);
-      button1HoldDown = false;
-      delay(500);
+  if (button1HoldDown == true && button1pressed == false) {  // toggle between scaling up/down and moving up/down
+    imageFunctionToggle++;
+    Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle);
+    button1HoldDown = false;
+    delay(500);
   }
 
-  if(imageFunctionToggle > 3) {
-      imageFunctionToggle = 0;
+  if (imageFunctionToggle > 3) {
+    imageFunctionToggle = 0;
   }
 
-  if(button2pressed || button3pressed) {
-    switch(imageFunctionToggle) {
-        case 0:
-            if (button2pressed) {
-              shiftVerticalDown();
-              delay(100);
-            }
-            if (button3pressed) {
-              shiftVerticalUp();
-              delay(100);
-            }
-            break;
-        case 1:
-            if (button2pressed) {
-              scaleVertical(1, false);
-              delay(100);
-            }
-            if (button3pressed) {
-              scaleVertical(1, true);
-              delay(100);
-            }
-            break;
-        case 2:
-            if (button2pressed) {
-              shiftHorizontalLeft();
-              delay(100);
-            }
-            if (button3pressed) {
-              shiftHorizontalRight();
-              delay(100);
-            }
-            break;
-        case 3:
-            if (button2pressed) {
-              scaleHorizontalSmaller();
-              delay(100);
-            }
-            if (button3pressed) {
-              scaleHorizontalLarger();
-              delay(100);
-            }
-            break;
+  if (button2pressed || button3pressed) {
+    switch (imageFunctionToggle) {
+      case 0:
+        if (button2pressed) {
+          shiftVerticalDown();
+          delay(100);
         }
+        if (button3pressed) {
+          shiftVerticalUp();
+          delay(100);
+        }
+        break;
+      case 1:
+        if (button2pressed) {
+          scaleVertical(1, false);
+          delay(100);
+        }
+        if (button3pressed) {
+          scaleVertical(1, true);
+          delay(100);
+        }
+        break;
+      case 2:
+        if (button2pressed) {
+          shiftHorizontalLeft();
+          delay(100);
+        }
+        if (button3pressed) {
+          shiftHorizontalRight();
+          delay(100);
+        }
+        break;
+      case 3:
+        if (button2pressed) {
+          scaleHorizontalSmaller();
+          delay(100);
+        }
+        if (button3pressed) {
+          scaleHorizontalLarger();
+          delay(100);
+        }
+        break;
     }
+  }
 
   if (Serial.available() || globalCommand != 0) {
-  switch (globalCommand == 0 ? Serial.read() : globalCommand) {
+    switch (globalCommand == 0 ? Serial.read() : globalCommand) {
       case ' ':
         // skip spaces
         inputStage = 0; // reset this as well
@@ -2112,7 +2112,7 @@ void loop() {
         }
         break;
       case 'e':
-        if(widescreenSwitchEnabled == true) {
+        if (widescreenSwitchEnabled == true) {
           Serial.println(F("ntsc preset widescreen"));
           writeProgramArrayNew(ntsc_widescreen);
         } else {
@@ -2122,7 +2122,7 @@ void loop() {
         doPostPresetLoadSteps();
         break;
       case 'r':
-        if(widescreenSwitchEnabled == true) {
+        if (widescreenSwitchEnabled == true) {
           Serial.println(F("pal preset widescreen"));
           writeProgramArrayNew(pal_widescreen);
         } else {
@@ -2443,7 +2443,7 @@ void loop() {
 
   // poll sync status continously
   if ((rto->sourceDisconnected == false) && (rto->syncWatcher == true) && ((millis() - lastTimeSyncWatcher) > 60)) {
-  byte videoMode = getVideoMode();
+    byte videoMode = getVideoMode();
     boolean doChangeVideoMode = false;
 
     if (videoMode == 0) {
@@ -2538,7 +2538,7 @@ void loop() {
   }
 
   if (rto->printInfos == true) { // information mode
-  writeOneByte(0xF0, 0);
+    writeOneByte(0xF0, 0);
 
     //horizontal pixels:
     readFromRegister(0x07, 1, &register_high); readFromRegister(0x06, 1, &register_low);
@@ -2584,8 +2584,8 @@ void loop() {
   } // end information mode
 
   if (rto->IFdown == true) {
-  rto->IFdown = false;
-  writeOneByte(0xF0, 1);
+    rto->IFdown = false;
+    writeOneByte(0xF0, 1);
     readFromRegister(0x1e, 1, &readout);
     //if (readout > 0) // just underflow
     {
@@ -2596,11 +2596,11 @@ void loop() {
 
   // only run this when sync is stable!
   if (rto->syncLockEnabled == true && rto->syncLockFound == false && getSyncStable() && rto->videoStandardInput != 0) {
-  aquireSyncLock();
+    aquireSyncLock();
   }
 
   if (rto->sourceDisconnected == true) { // keep looking for new input
-  writeOneByte(0xF0, 0);
+    writeOneByte(0xF0, 0);
     byte a = 0;
     for (byte b = 0; b < 20; b++) {
       readFromRegister(0x17, 1, &readout); // input htotal
