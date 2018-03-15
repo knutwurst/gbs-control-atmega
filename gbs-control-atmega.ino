@@ -1,17 +1,14 @@
 #include <Wire.h>
+#include <EEPROM.h>
 #include "minimal_startup.h"
 #include "rgbhv.h"
-
 #include "ypbpr_1080i.h"
 #include "ofw_ypbpr.h"
-
 //#include "ntsc_240p.h"
 //#include "pal_240p.h"
-
 #include "pal_widescreen.h"
 #include "pal_fullscreen.h"
 #include "pal_feedbackclock.h"
-
 #include "ntsc_widescreen.h"
 #include "ntsc_fullscreen.h"
 #include "ntsc_feedbackclock.h"
@@ -33,7 +30,7 @@
 struct runTimeOptions {
   boolean inputIsYpBpR;
   boolean syncWatcher;
-  uint8_t videoStandardInput : 3; // 0 - unknown, 1 - NTSC like, 2 - PAL like, 3 480p NTSC, 4 576p PAL
+  uint8_t videoStandardInput : 4; // 0 - unknown, 1 - NTSC like, 2 - PAL like, 3 480p NTSC, 4 576p PAL
   uint8_t phaseSP;
   uint8_t phaseADC;
   uint8_t samplingStart;
@@ -1911,6 +1908,10 @@ void setup() {
   }
 #endif
 
+  Serial.print("Loading UserPresets from EEPROM... ");
+  imageFunctionToggle = EEPROM.read(0);
+  Serial.println("done");
+
   globalCommand = 0; // web server uses this to issue commands
   Serial.print(F("\nStartup complete! \nMCU: ")); Serial.println(F_CPU);
   LEDOFF; // startup done, disable the LED
@@ -1938,8 +1939,6 @@ void loop() {
   bool button1pressed = (digitalRead(BUTTON1) == LOW);
   bool button2pressed = (digitalRead(BUTTON2) == LOW);
   bool button3pressed = (digitalRead(BUTTON3) == LOW);
-
-
 
   widescreenSwitchEnabled = (digitalRead(SWITCH1) == HIGH);
 
@@ -1989,9 +1988,20 @@ void loop() {
   // is button1 released? AND was pressed before?
   if (button1HoldDown == true && button1pressed == false) {  // toggle between scaling up/down and moving up/down
     imageFunctionToggle++;
-    Serial.print("ImageFunctionToggle: "); Serial.println(imageFunctionToggle);
+    Serial.println("ImageFunctionToggle (saving to EEPROM): "); Serial.println(imageFunctionToggle);
+    EEPROM.write(0, imageFunctionToggle);
     button1HoldDown = false;
-    delay(500);
+    LEDON;
+    delay(100);
+    LEDOFF;
+    delay(100);
+    LEDON;
+    delay(100);
+    LEDOFF;
+    delay(100);
+    LEDON;
+    delay(100);
+    LEDOFF;
   }
 
   if (imageFunctionToggle > 3) {
