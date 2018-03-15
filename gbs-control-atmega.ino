@@ -210,10 +210,10 @@ void writeProgramArrayNew(const uint8_t* programArray) {
   Serial.println(rto->phaseADC); Serial.println(rto->phaseSP);
 
   //reset rto sampling start variable
-  writeOneByte(0xF0, 1);
-  readFromRegister(0x26, 1, &readout);
-  rto->samplingStart = readout;
-  Serial.println(rto->samplingStart);
+  //writeOneByte(0xF0, 1);
+  //readFromRegister(0x26, 1, &readout);
+  //rto->samplingStart = readout;
+  //Serial.println(rto->samplingStart);
 
   writeOneByte(0xF0, 0);
   writeOneByte(0x46, 0x3f); // reset controls 1 // everything on except VDS display output
@@ -663,7 +663,7 @@ boolean getSyncProcessorSignalValid() {
   else if (register_combined > 205 && register_combined < 225) {
     horizontalOkay = true;  // hdtv 214
   }
-  else Serial.println("hor bad");
+  //else Serial.println("hor bad");
 
   readFromRegister(0x08, 1, &register_high); readFromRegister(0x07, 1, &register_low);
   register_combined = (((uint16_t(register_high) & 0x000f)) << 7) | (((uint16_t)register_low & 0x00fe) >> 1);
@@ -673,7 +673,7 @@ boolean getSyncProcessorSignalValid() {
   else if ((register_combined > 620 && register_combined < 632) && (horizontalOkay == true) ) {
     verticalOkay = true;  // pal
   }
-  else Serial.println("ver bad");
+  //else Serial.println("ver bad");
 
   readFromRegister(0x1a, 1, &register_high); readFromRegister(0x19, 1, &register_low);
   register_combined = (((uint16_t(register_high) & 0x000f)) << 8) | (uint16_t)register_low;
@@ -681,7 +681,7 @@ boolean getSyncProcessorSignalValid() {
     hpwOkay = true;
   }
   else {
-    Serial.print("hpw bad: ");
+    //Serial.print("hpw bad: ");
     Serial.println(register_combined);
   }
 
@@ -1480,7 +1480,6 @@ void aquireSyncLock() {
 
 void doPostPresetLoadSteps() {
   if (rto->inputIsYpBpR == true) {
-    Serial.print("(YUV)");
     applyYuvPatches();
     rto->currentLevelSOG = 12; // do this here, gets applied next line
   }
@@ -1508,24 +1507,19 @@ void doPostPresetLoadSteps() {
   rto->modeDetectInReset = false;
   LEDOFF; // in case LED was on
   Serial.println(F("post preset done"));
-  Serial.println(F("----"));
   getVideoTimings();
-  Serial.println(F("----"));
 }
 
 void applyPresets(byte videoMode) {
   if (videoMode == 2) {
     if (uopt->presetPreference == 0) {
       if (widescreenSwitchEnabled == true) {
-        Serial.println(F("writing PAL widescreen preset"));
         writeProgramArrayNew(pal_widescreen);
       } else {
-        Serial.println(F("writing PAL fullscreen preset"));
         writeProgramArrayNew(pal_fullscreen);
       }
     }
     else if (uopt->presetPreference == 1) {
-      Serial.println(F("writing PAL feedbackclock"));
       writeProgramArrayNew(pal_feedbackclock);
     }
     rto->videoStandardInput = 2;
@@ -1534,34 +1528,27 @@ void applyPresets(byte videoMode) {
   else if (videoMode == 1) {
     if (uopt->presetPreference == 0) {
       if (widescreenSwitchEnabled == true) {
-        Serial.println(F("writing NTSC widescreen preset"));
         writeProgramArrayNew(ntsc_widescreen);
       } else {
-        Serial.println(F("writing NTSC fullscreen preset"));
         writeProgramArrayNew(ntsc_fullscreen);
       }
     }
     else if (uopt->presetPreference == 1) {
-      Serial.println(F("writing NTSC feedbackclock"));
       writeProgramArrayNew(ntsc_feedbackclock);
     }
     rto->videoStandardInput = 1;
     doPostPresetLoadSteps();
   }
   else if (videoMode == 3) {
-    Serial.println(F("HDTV timing "));
     // ntsc base
     if (uopt->presetPreference == 0) {
       if (widescreenSwitchEnabled == true) {
-        Serial.println(F("writing NTSC widescreen preset"));
         writeProgramArrayNew(ypbpr_1080i);
       } else {
-        Serial.println(F("writing NTSC fullscreen preset"));
         writeProgramArrayNew(ypbpr_1080i);
       }
     }
     else if (uopt->presetPreference == 1) {
-      Serial.println(F("writing NTSC feedbackclock"));
       writeProgramArrayNew(ntsc_feedbackclock);
     }
     rto->videoStandardInput = 3;
@@ -1865,8 +1852,7 @@ void setup() {
     delay(500);
   }
 
-  Serial.println("Dumping registers... \n\n");
-  Serial.println("const uint8_t dump[] PROGMEM = {");
+  Serial.println("Dumping registers... \n\nconst uint8_t dump[] PROGMEM = {");
   for (int segment = 0; segment <= 5; segment++) {
     dumpRegisters(segment);
   }
@@ -1910,10 +1896,19 @@ void setup() {
 
   Serial.print("Loading UserPresets from EEPROM... ");
   imageFunctionToggle = EEPROM.read(0);
-  Serial.println("done");
+  
+  if(imageFunctionToggle > 3  || imageFunctionToggle < 0) {
+    imageFunctionToggle = 0;
+  }
+
+  rto->samplingStart = EEPROM.read(1);
+  if(rto->samplingStart > 6 || rto->samplingStart < 1) {
+    rto->samplingStart = 1;
+  }
+  setSamplingStart(rto->samplingStart);
 
   globalCommand = 0; // web server uses this to issue commands
-  Serial.print(F("\nStartup complete! \nMCU: ")); Serial.println(F_CPU);
+  Serial.print(F("done!\nStartup complete! \nMCU: ")); Serial.println(F_CPU);
   LEDOFF; // startup done, disable the LED
 }
 
@@ -1969,6 +1964,7 @@ void loop() {
       setSamplingStart(rto->samplingStart);
       Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
       button2pressed = false;
+      EEPROM.write(1, rto->samplingStart);
     }
 
     if (button3pressed) {
@@ -1979,9 +1975,21 @@ void loop() {
       setSamplingStart(rto->samplingStart);
       Serial.print(F("sampling start: ")); Serial.println(rto->samplingStart);
       button3pressed = false;
+      EEPROM.write(1, rto->samplingStart);
     }
+    button1pressed = false;
     button1HoldDown = false;
-    delay(500);
+    LEDON;
+    delay(100);
+    LEDOFF;
+    delay(100);
+    LEDON;
+    delay(100);
+    LEDOFF;
+    delay(100);
+    LEDON;
+    delay(100);
+    LEDOFF;
   }
 
 
