@@ -207,14 +207,17 @@ void writeProgramArrayNew(const uint8_t* programArray) {
   rto->phaseADC = ((readout & 0x3e) >> 1);
   readFromRegister(0x19, 1, &readout);
   rto->phaseSP = ((readout & 0x3e) >> 1);
-  Serial.print(rto->phaseADC + "\n");
-  Serial.print(rto->phaseSP) + "\n";
+  Serial.print(rto->phaseADC);
+  Serial.print("\n");
+  Serial.print(rto->phaseSP);
+  Serial.print("\n");
 
   //reset rto sampling start variable
   //writeOneByte(0xF0, 1);
   //readFromRegister(0x26, 1, &readout);
   //rto->samplingStart = readout;
-  //Serial.print(rto->samplingStart + "\n");
+  //Serial.print(rto->samplingStart);
+  //Serial.print("\n");
 
   writeOneByte(0xF0, 0);
   writeOneByte(0x46, 0x3f); // reset controls 1 // everything on except VDS display output
@@ -402,7 +405,8 @@ void setSOGLevel(uint8_t level) {
   reg_5_02 = (reg_5_02 & 0xc1) | (level << 1);
   writeOneByte(0x02, reg_5_02);
   rto->currentLevelSOG = level;
-  Serial.print(" SOG lvl "); Serial.print(rto->currentLevelSOG + "\n");
+  Serial.print(" SOG lvl "); Serial.print(rto->currentLevelSOG);
+  Serial.print("\n");
 }
 
 void inputAndSyncDetect() {
@@ -693,7 +697,8 @@ boolean getSyncProcessorSignalValid() {
   }
   else {
     //Serial.print("hpw bad: ");
-    Serial.print(register_combined + "\n");
+    Serial.print(register_combined);
+    Serial.print("\n");
   }
 
   if ((horizontalOkay == true) && (verticalOkay == true) && (hpwOkay == true)) {
@@ -836,7 +841,8 @@ void scaleHorizontal(uint16_t amountToAdd, bool subtracting) {
   }
 
   Serial.print(F("Scale Hor: "));
-  Serial.print(newValue + "\n");
+  Serial.print(newValue);
+  Serial.print("\n");
   newHigh = (high & 0xfc) | (uint8_t)( (newValue / 256) & 0x0003);
   newLow = (uint8_t)(newValue & 0x00ff);
 
@@ -872,9 +878,11 @@ void moveHS(uint16_t amountToAdd, bool subtracting) {
     newSP += amountToAdd;
   }
   Serial.print("HSST: ");
-  Serial.print(newST + "\n");
+  Serial.print(newST);
+  Serial.print("\n");
   Serial.print(" HSSP: ");
-  Serial.print(newSP + "\n");
+  Serial.print(newSP);
+  Serial.print("\n");
 
   writeOneByte(0x0a, (uint8_t)(newST & 0x00ff));
   writeOneByte(0x0b, ((uint8_t)(newSP & 0x000f) << 4) | ((uint8_t)((newST & 0x0f00) >> 8)) );
@@ -914,9 +922,11 @@ void moveVS(uint16_t amountToAdd, bool subtracting) {
     } else Serial.print(F("limit!\n"));
   }
   Serial.print("VSST: ");
-  Serial.print(newST + "\n");
+  Serial.print(newST);
+  Serial.print("\n");
   Serial.print(" VSSP: ");
-  Serial.print(newSP + "\n");
+  Serial.print(newSP);
+  Serial.print("\n");
 
   writeOneByte(0x0d, (uint8_t)(newST & 0x00ff));
   writeOneByte(0x0e, ((uint8_t)(newSP & 0x000f) << 4) | ((uint8_t)((newST & 0x0f00) >> 8)) );
@@ -1000,7 +1010,8 @@ void scaleVertical(uint16_t amountToAdd, bool subtracting) {
   }
 
   Serial.print(F("Scale Vert: "));
-  Serial.print(newValue + "\n");
+  Serial.print(newValue);
+  Serial.print("\n");
   newHigh = (uint8_t)(newValue >> 4);
   newLow = (low & 0x0f) | (((uint8_t)(newValue & 0x00ff)) << 4) ;
 
@@ -1113,56 +1124,64 @@ void getVideoTimings() {
   readFromRegister(3, 0x02, 1, &regHigh);
   Vds_hsync_rst = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   Serial.print(F("htotal: "));
-  Serial.print(Vds_hsync_rst + "\n");
+  Serial.print(Vds_hsync_rst);
+  Serial.print("\n");
 
   // get horizontal scale up
   readFromRegister(3, 0x16, 1, &regLow);
   readFromRegister(3, 0x17, 1, &regHigh);
   VDS_HSCALE = (( ( ((uint16_t)regHigh) & 0x0003) << 8) | (uint16_t)regLow);
   Serial.print(F("VDS_HSCALE: "));
-  Serial.print(VDS_HSCALE + "\n");
+  Serial.print(VDS_HSCALE);
+  Serial.print("\n");
 
   // get HS_ST
   readFromRegister(3, 0x0a, 1, &regLow);
   readFromRegister(3, 0x0b, 1, &regHigh);
   VDS_HS_ST = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   Serial.print(F("HS ST: "));
-  Serial.print(VDS_HS_ST + "\n");
+  Serial.print(VDS_HS_ST);
+  Serial.print("\n");
 
   // get HS_SP
   readFromRegister(3, 0x0b, 1, &regLow);
   readFromRegister(3, 0x0c, 1, &regHigh);
   VDS_HS_SP = ( (((uint16_t)regHigh) << 4) | ((uint16_t)regLow & 0x00f0) >> 4);
   Serial.print(F("HS SP: "));
-  Serial.print(VDS_HS_SP + "\n");
+  Serial.print(VDS_HS_SP);
+  Serial.print("\n");
 
   // get HBST
   readFromRegister(3, 0x10, 1, &regLow);
   readFromRegister(3, 0x11, 1, &regHigh);
   vds_dis_hb_st = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   Serial.print(F("HB ST (display): "));
-  Serial.print(vds_dis_hb_st + "\n");
+  Serial.print(vds_dis_hb_st);
+  Serial.print("\n");
 
   // get HBSP
   readFromRegister(3, 0x11, 1, &regLow);
   readFromRegister(3, 0x12, 1, &regHigh);
   vds_dis_hb_sp = ( (((uint16_t)regHigh) << 4) | ((uint16_t)regLow & 0x00f0) >> 4);
   Serial.print(F("HB SP (display): "));
-  Serial.print(vds_dis_hb_sp + "\n");
+  Serial.print(vds_dis_hb_sp);
+  Serial.print("\n");
 
   // get HBST(memory)
   readFromRegister(3, 0x04, 1, &regLow);
   readFromRegister(3, 0x05, 1, &regHigh);
   vds_dis_hb_st = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   Serial.print(F("HB ST (memory): "));
-  Serial.print(vds_dis_hb_st + "\n");
+  Serial.print(vds_dis_hb_st);
+  Serial.print("\n");
 
   // get HBSP(memory)
   readFromRegister(3, 0x05, 1, &regLow);
   readFromRegister(3, 0x06, 1, &regHigh);
   vds_dis_hb_sp = ( (((uint16_t)regHigh) << 4) | ((uint16_t)regLow & 0x00f0) >> 4);
   Serial.print(F("HB SP (memory): "));
-  Serial.print(vds_dis_hb_sp + "\n");
+  Serial.print(vds_dis_hb_sp);
+  Serial.print("\n");
 
   Serial.print(F("----\n"));
   // get VRST
@@ -1170,63 +1189,72 @@ void getVideoTimings() {
   readFromRegister(3, 0x03, 1, &regHigh);
   Vds_vsync_rst = ( (((uint16_t)regHigh) & 0x007f) << 4) | ( (((uint16_t)regLow) & 0x00f0) >> 4);
   Serial.print(F("vtotal: "));
-  Serial.print(Vds_vsync_rst + "\n");
+  Serial.print(Vds_vsync_rst);
+  Serial.print("\n");
 
   // get vertical scale up
   readFromRegister(3, 0x17, 1, &regLow);
   readFromRegister(3, 0x18, 1, &regHigh);
   VDS_VSCALE = ( (((uint16_t)regHigh) & 0x007f) << 4) | ( (((uint16_t)regLow) & 0x00f0) >> 4);
   Serial.print(F("VDS_VSCALE: "));
-  Serial.print(VDS_VSCALE + "\n");
+  Serial.print(VDS_VSCALE);
+  Serial.print("\n");
 
   // get V Sync Start
   readFromRegister(3, 0x0d, 1, &regLow);
   readFromRegister(3, 0x0e, 1, &regHigh);
   VDS_DIS_VS_ST = (((uint16_t)regHigh & 0x0007) << 8) | ((uint16_t)regLow) ;
   Serial.print(F("VS ST: "));
-  Serial.print(VDS_DIS_VS_ST + "\n");
+  Serial.print(VDS_DIS_VS_ST);
+  Serial.print("\n");
 
   // get V Sync Stop
   readFromRegister(3, 0x0e, 1, &regLow);
   readFromRegister(3, 0x0f, 1, &regHigh);
   VDS_DIS_VS_SP = ((((uint16_t)regHigh & 0x007f) << 4) | ((uint16_t)regLow & 0x00f0) >> 4) ;
   Serial.print(F("VS SP: "));
-  Serial.print(VDS_DIS_VS_SP + "\n");
+  Serial.print(VDS_DIS_VS_SP);
+  Serial.print("\n");
 
   // get VBST
   readFromRegister(3, 0x13, 1, &regLow);
   readFromRegister(3, 0x14, 1, &regHigh);
   VDS_DIS_VB_ST = (((uint16_t)regHigh & 0x0007) << 8) | ((uint16_t)regLow) ;
   Serial.print(F("VB ST (display): "));
-  Serial.print(VDS_DIS_VB_ST + "\n");
+  Serial.print(VDS_DIS_VB_ST);
+  Serial.print("\n");
 
   // get VBSP
   readFromRegister(3, 0x14, 1, &regLow);
   readFromRegister(3, 0x15, 1, &regHigh);
   VDS_DIS_VB_SP = ((((uint16_t)regHigh & 0x007f) << 4) | ((uint16_t)regLow & 0x00f0) >> 4) ;
   Serial.print(F("VB SP (display): "));
-  Serial.print(VDS_DIS_VB_SP + "\n");
+  Serial.print(VDS_DIS_VB_SP);
+  Serial.print("\n");
 
   // get VBST (memory)
   readFromRegister(3, 0x07, 1, &regLow);
   readFromRegister(3, 0x08, 1, &regHigh);
   VDS_DIS_VB_ST = (((uint16_t)regHigh & 0x0007) << 8) | ((uint16_t)regLow) ;
   Serial.print(F("VB ST (memory): "));
-  Serial.print(VDS_DIS_VB_ST + "\n");
+  Serial.print(VDS_DIS_VB_ST);
+  Serial.print("\n");
 
   // get VBSP (memory)
   readFromRegister(3, 0x08, 1, &regLow);
   readFromRegister(3, 0x09, 1, &regHigh);
   VDS_DIS_VB_SP = ((((uint16_t)regHigh & 0x007f) << 4) | ((uint16_t)regLow & 0x00f0) >> 4) ;
   Serial.print(F("VB SP (memory): "));
-  Serial.print(VDS_DIS_VB_SP + "\n");
+  Serial.print(VDS_DIS_VB_SP);
+  Serial.print("\n");
 
   // get Pixel Clock -- MD[11:0] -- must be smaller than 4096 --
   readFromRegister(5, 0x12, 1, &regLow);
   readFromRegister(5, 0x13, 1, &regHigh);
   MD_pll_divider = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   Serial.print(F("PLLAD divider: "));
-  Serial.print(MD_pll_divider + "\n");
+  Serial.print(MD_pll_divider);
+  Serial.print("\n");
 }
 
 //s0s41s85 wht 1800 wvt 1200 | pal 1280x???
@@ -1431,9 +1459,11 @@ void aquireSyncLock() {
   outputLength = lowPulse + highPulse;
 
   Serial.print(F("in field time: "));
-  Serial.print(inputLength + "\n");
+  Serial.print(inputLength);
+  Serial.print("\n");
   Serial.print(F("out field time: "));
-  Serial.print(outputLength + "\n");
+  Serial.print(outputLength);
+  Serial.print("\n");
 
   // shortcut to exit if in and out are close
   int inOutDiff = outputLength - inputLength;
@@ -1448,7 +1478,8 @@ void aquireSyncLock() {
   htotal = (( ( ((uint16_t)regHigh) & 0x000f) << 8) | (uint16_t)regLow);
   backupHTotal = htotal;
   Serial.print(F(" Start HTotal: "));
-  Serial.print(htotal + "\n");
+  Serial.print(htotal);
+  Serial.print("\n");
 
   // start looking at an htotal value at or slightly below anticipated target
   htotal = ((float)(htotal) / (float)(outputLength)) * (float)(inputLength);
@@ -1469,7 +1500,8 @@ void aquireSyncLock() {
     difference = (outputLength > inputLength) ? (outputLength - inputLength) : (inputLength - outputLength);
     Serial.print(htotal);
     Serial.print(": ");
-    Serial.print(difference + "\n");
+    Serial.print(difference);
+    Serial.print("\n");
 
     if (difference == prev_difference) {
       // best value is last one, exit
@@ -1517,7 +1549,8 @@ void aquireSyncLock() {
   if (htotal > backupHTotal) {
     if ((htotal - backupHTotal) > 400) { // increased from 30 to 400 (54mhz psx)
       Serial.print("safety triggered upper ");
-      Serial.print(htotal - backupHTotal + "\n");
+      Serial.print(htotal - backupHTotal);
+      Serial.print("\n");
       regLow = (uint8_t)backupHTotal;
       readFromRegister(3, 0x02, 1, &regHigh);
       regHigh = (regHigh & 0xf0) | (backupHTotal >> 8);
@@ -1529,7 +1562,8 @@ void aquireSyncLock() {
   else if (htotal < backupHTotal) {
     if ((backupHTotal - htotal) > 400) { // increased from 30 to 400 (54mhz psx)
       Serial.print("safety triggered lower ");
-      Serial.print(backupHTotal - htotal + "\n");
+      Serial.print(backupHTotal - htotal);
+      Serial.print("\n");
       regLow = (uint8_t)backupHTotal;
       readFromRegister(3, 0x02, 1, &regHigh);
       regHigh = (regHigh & 0xf0) | (backupHTotal >> 8);
@@ -1544,7 +1578,8 @@ void aquireSyncLock() {
   hbsp = ( (((uint16_t)regHigh) << 4) | ((uint16_t)regLow & 0x00f0) >> 4);
 
   Serial.print(F(" End HTotal: "));
-  Serial.print(htotal + "\n");
+  Serial.print(htotal);
+  Serial.print("\n");
 
   if ( htotal <= hbsp  ) {
     hbsp = htotal - 1;
@@ -1832,9 +1867,11 @@ void setClampPosition() {
     clampPositionStart = ((htotal - hpw) + 20) & 0xfff8;
     clampPositionStop = (htotal - 20) & 0xfff8;
     Serial.print(" clampPositionStart: ");
-    Serial.print(clampPositionStart + "\n");
+    Serial.print(clampPositionStart);
+    Serial.print("\n");
     Serial.print(" clampPositionStop: ");
-    Serial.print(clampPositionStop + "\n");
+    Serial.print(clampPositionStop);
+    Serial.print("\n");
     register_high = clampPositionStart >> 8;
     register_low = (uint8_t)clampPositionStart;
     writeOneByte(0xF0, 5);
@@ -1995,7 +2032,9 @@ void setup() {
   setSamplingStart(rto->samplingStart);
 
   globalCommand = 0; // web server uses this to issue commands
-  Serial.print(F("done!\nStartup complete! \nMCU: ")); Serial.print(F_CPU + "\n");
+  Serial.print(F("done!\nStartup complete! \nMCU: "));
+  Serial.print(F_CPU);
+  Serial.print("\n");
   LEDOFF; // startup done, disable the LED
 }
 
@@ -2047,7 +2086,8 @@ void loop() {
       rto->samplingStart++;
       setSamplingStart(rto->samplingStart);
       Serial.print(F("sampling start: "));
-      Serial.print(rto->samplingStart + "\n");
+      Serial.print(rto->samplingStart);
+      Serial.print("\n");
       button2pressed = false;
       EEPROM.write(1, rto->samplingStart);
     }
@@ -2056,7 +2096,8 @@ void loop() {
       rto->samplingStart--;
       setSamplingStart(rto->samplingStart);
       Serial.print(F("sampling start: "));
-      Serial.print(rto->samplingStart + "\n");
+      Serial.print(rto->samplingStart);
+      Serial.print("\n");
       button3pressed = false;
       EEPROM.write(1, rto->samplingStart);
     }
@@ -2080,7 +2121,8 @@ void loop() {
   if (button1HoldDown == true && button1pressed == false) {  // toggle between scaling up/down and moving up/down
     imageFunctionToggle++;
     Serial.print("ImageFunctionToggle (saving to EEPROM): ");
-    Serial.print(imageFunctionToggle + "\n");
+    Serial.print(imageFunctionToggle);
+    Serial.print("\n");
     EEPROM.write(0, imageFunctionToggle);
     button1HoldDown = false;
     LEDON;
@@ -2272,7 +2314,8 @@ void loop() {
           writeOneByte(0x01, regLow);
           writeOneByte(0x02, regHigh);
           Serial.print(F("HTotal++: "));
-          Serial.print(htotal + "\n");
+          Serial.print(htotal);
+          Serial.print("\n");
         }
         break;
       case 'm':
@@ -2317,9 +2360,11 @@ void loop() {
         rto->phaseADC += 1; rto->phaseADC &= 0x1f;
         rto->phaseSP += 1; rto->phaseSP &= 0x1f;
         Serial.print("ADC: ");
-        Serial.print(rto->phaseADC + "\n");
+        Serial.print(rto->phaseADC);
+        Serial.print("\n");
         Serial.print(" SP: ");
-        Serial.print(rto->phaseSP + "\n");
+        Serial.print(rto->phaseSP);
+        Serial.print("\n");
         break;
       case '0':
         moveHS(1, true);
@@ -2398,7 +2443,8 @@ void loop() {
           if (inputStage == 1) {
             segment = Serial.parseInt();
             Serial.print("segment: ");
-            Serial.print(segment + "\n");
+            Serial.print(segment);
+            Serial.print("\n");
           }
           else if (inputStage == 2) {
             char szNumbers[3];
@@ -2430,7 +2476,8 @@ void loop() {
           if (inputStage == 1) {
             segment = Serial.parseInt();
             Serial.print("segment: ");
-            Serial.print(segment + "\n");
+            Serial.print(segment);
+            Serial.print("\n");
           }
           else if (inputStage == 2) {
             char szNumbers[3];
@@ -2438,7 +2485,8 @@ void loop() {
             char * pEnd;
             inputRegister = strtol(szNumbers, &pEnd, 16);
             Serial.print("register: ");
-            Serial.print(inputRegister + "\n");
+            Serial.print(inputRegister);
+            Serial.print("\n");
           }
           else if (inputStage == 3) {
             char szNumbers[3];
@@ -2472,7 +2520,8 @@ void loop() {
           if (inputStage == 1) {
             segment = Serial.parseInt();
             Serial.print(F("toggle bit segment: "));
-            Serial.print(segment + "\n");
+            Serial.print(segment);
+            Serial.print("\n");
           }
           else if (inputStage == 2) {
             char szNumbers[3];
@@ -2486,7 +2535,8 @@ void loop() {
           else if (inputStage == 3) {
             inputToogleBit = Serial.parseInt();
             Serial.print(F(" inputToogleBit: "));
-            Serial.print(inputToogleBit + "\n");
+            Serial.print(inputToogleBit);
+            Serial.print("\n");
             inputStage = 0;
             if ((segment <= 5) && (inputToogleBit <= 7)) {
               writeOneByte(0xF0, segment);
@@ -2552,7 +2602,8 @@ void loop() {
         rto->samplingStart++;
         setSamplingStart(rto->samplingStart);
         Serial.print(F("sampling start: "));
-        Serial.print(rto->samplingStart + "\n");
+        Serial.print(rto->samplingStart);
+        Serial.print("\n");
         break;
       default:
         Serial.print(F("command not understood\n"));
