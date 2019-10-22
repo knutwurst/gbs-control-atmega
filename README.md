@@ -29,7 +29,7 @@ These are the requred pins to run gbs-control-atmega.
   
 # Further intructions
 
-*Switch 1 (D8) switches between widescreen and fullscreen. It has to be a switch with 2 states (on/off)
+*Switch 1 (D8) switches between widescreen and fullscreen. It has to be a switch with 2 states (on/off)  
 *Button 1 (D2) selects the mode: move vertial, scale vertial, move horizontal, scale horizontal  
 *Button 2 (D3) is "down"  
 *Button 3 (D4) is "up"  
