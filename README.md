@@ -35,3 +35,5 @@ These are the requred pins to run gbs-control-atmega.
 *Button 3 (D4) is "up"  
   
 Pressing Button 2 and 3 together resets the picture to the saved preset.
+
+Button 1 can be hold down to use Button 2 and 3 to adjust the sampling start.
